@@ -14,8 +14,8 @@ import (
 )
 
 type Site struct {
-	Id                  int
-	Url                 string
+	ID                  int
+	URL                 string
 	Frequency           float64
 	LastExecutionDate   *time.Time `json:"last_execution_date"`
 	Sucess              *bool
@@ -58,8 +58,8 @@ func Index(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				panic(err.Error())
 			}
-			site.Id = id
-			site.Url = url
+			site.ID = id
+			site.URL = url
 			site.Frequency = frequency
 			site.Sucess = sucess
 			site.ResponseTime = responseTime
@@ -88,7 +88,7 @@ func Show(w http.ResponseWriter, r *http.Request) {
 		selDB := db.QueryRow("SELECT id, url, frequency, last_execution_date, sucess, response_time, response_average_time, creation_date, last_updated_date FROM sites WHERE id=?", id)
 		site := &Site{}
 
-		err := selDB.Scan(&site.Id, &site.Url, &site.Frequency, &site.LastExecutionDate, &site.Sucess, &site.ResponseTime, &site.ResponseAverageTime, &site.CreationDate, &site.LastUpdatedDate)
+		err := selDB.Scan(&site.ID, &site.URL, &site.Frequency, &site.LastExecutionDate, &site.Sucess, &site.ResponseTime, &site.ResponseAverageTime, &site.CreationDate, &site.LastUpdatedDate)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -115,7 +115,7 @@ func Insert(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err.Error())
 		}
-		insDB.Exec(site.Url, site.Frequency, site.CreationDate)
+		insDB.Exec(site.URL, site.Frequency, site.CreationDate)
 		defer db.Close()
 	}
 }
@@ -139,7 +139,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err.Error())
 		}
-		updDB.Exec(site.Url, site.Frequency, site.CreationDate, time_start.Format(time.RFC3339), site.Id)
+		updDB.Exec(site.URL, site.Frequency, site.CreationDate, time_start.Format(time.RFC3339), site.ID)
 		defer db.Close()
 	}
 }
@@ -179,8 +179,8 @@ func Monitoring(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err.Error())
 		}
-		site.Url = url
-		site.Id = id
+		site.URL = url
+		site.ID = id
 
 		sites = append(sites, site)
 	}
@@ -192,13 +192,13 @@ func Monitoring(w http.ResponseWriter, r *http.Request) {
 
 func Ping(site Site, db *sql.DB) {
 	time_start := time.Now()
-	resp, err := http.Get(site.Url)
+	resp, err := http.Get(site.URL)
 	if err != nil {
 		insDB, err := db.Prepare("UPDATE Sites SET sucess=? WHERE id=?")
 		if err != nil {
 			panic(err.Error())
 		}
-		insDB.Exec(false, site.Id)
+		insDB.Exec(false, site.ID)
 		return
 	}
 	insDB, err := db.Prepare("UPDATE Sites SET last_execution_date=?, sucess=?, response_time=? WHERE id=?")
@@ -206,9 +206,9 @@ func Ping(site Site, db *sql.DB) {
 		panic(err.Error())
 	}
 	dt := time_start.Format(time.RFC3339)
-	insDB.Exec(dt, resp.StatusCode == 200, time.Since(time_start), site.Id)
+	insDB.Exec(dt, resp.StatusCode == 200, time.Since(time_start), site.ID)
 
-	fmt.Println(time.Since(time_start), site.Url)
+	fmt.Println(time.Since(time_start), site.URL)
 }
 
 func main() {
