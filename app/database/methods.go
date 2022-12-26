@@ -15,27 +15,10 @@ func (db *DB) GetSites() ([]models.Site, error) {
 	site := models.Site{}
 	sites := []models.Site{}
 	for selDB.Next() {
-		var id int
-		var url string
-		var frequency float64
-		var sucess *bool
-		var responseTime, responseAverageTime *float64
-		var creationDate time.Time
-		var lastExecutionDate, lastUpdatedDate *time.Time
-		err = selDB.Scan(&id, &url, &frequency, &sucess, &responseTime, &responseAverageTime, &creationDate, &lastExecutionDate, &lastUpdatedDate)
+		err = selDB.Scan(&site.ID, &site.URL, &site.Frequency, &site.Sucess, &site.ResponseTime, &site.ResponseAverageTime, &site.CreationDate, &site.LastExecutionDate, &site.LastUpdatedDate)
 		if err != nil {
 			panic(err.Error())
 		}
-		site.ID = id
-		site.URL = url
-		site.Frequency = frequency
-		site.Sucess = sucess
-		site.ResponseTime = responseTime
-		site.ResponseAverageTime = responseAverageTime
-		site.CreationDate = creationDate
-		site.LastExecutionDate = lastExecutionDate
-		site.LastUpdatedDate = lastUpdatedDate
-
 		sites = append(sites, site)
 	}
 	return sites, nil
