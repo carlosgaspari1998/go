@@ -64,48 +64,51 @@ func (db *DB) DeleteSite(id string) error {
 }
 
 func (db *DB) MonitoringSite() {
-	selDB, err := db.db.Query("SELECT id, url FROM sites")
+	sites := make(chan models.Site, 5)
+	readSites := make(chan models.Site, 5)
+
+	go GetSitesMonitoring(sites, readSites, db)
+	go Ping(sites, readSites, db)
+}
+
+func GetSitesMonitoring(sites chan<- models.Site, readSites <-chan models.Site, db *DB) {
+	selDB, err := db.db.Query("SELECT id, url, frequency FROM sites")
 	if err != nil {
 		panic(err.Error())
 	}
 
 	site := models.Site{}
-	sites := []models.Site{}
-
 	for selDB.Next() {
-		var id int
-		var url string
-		err = selDB.Scan(&id, &url)
+		err = selDB.Scan(&site.ID, &site.URL, &site.Frequency)
 		if err != nil {
 			panic(err.Error())
 		}
-		site.URL = url
-		site.ID = id
-
-		sites = append(sites, site)
+		sites <- site
 	}
 
-	for _, s := range sites {
-		go ping(s, db)
+	for rs := range readSites {
+		sites <- rs
 	}
 }
 
-func ping(site models.Site, db *DB) {
-	time_start := time.Now()
-	resp, err := http.Get(site.URL)
-	if err != nil {
-		insDB, err := db.db.Prepare("UPDATE Sites SET sucess=? WHERE id=?")
+func Ping(sites <-chan models.Site, readSites chan<- models.Site, db *DB) {
+	for site := range sites {
+		time_start := time.Now()
+		resp, errRequest := http.Get(site.URL)
+		updDB, err := db.db.Prepare("UPDATE Sites SET last_execution_date=?, sucess=?, response_time=? WHERE id=?")
 		if err != nil {
 			panic(err.Error())
 		}
-		insDB.Exec(false, site.ID)
-		return
+		lastExecutionDate := time_start.Format(time.RFC3339)
+		sucess := (errRequest == nil && resp.StatusCode == 200)
+
+		updDB.Exec(lastExecutionDate, sucess, time.Since(time_start), site.ID)
+		go AddSiteMonitoring(site, readSites)
 	}
-	insDB, err := db.db.Prepare("UPDATE Sites SET last_execution_date=?, sucess=?, response_time=? WHERE id=?")
-	if err != nil {
-		panic(err.Error())
-	}
-	dt := time_start.Format(time.RFC3339)
-	insDB.Exec(dt, resp.StatusCode == 200, time.Since(time_start), site.ID)
-	fmt.Println(time.Since(time_start), site.URL)
+}
+
+func AddSiteMonitoring(site models.Site, readSites chan<- models.Site) {
+	fmt.Println(site.URL)
+	time.Sleep(time.Millisecond * time.Duration(site.Frequency))
+	readSites <- site
 }
