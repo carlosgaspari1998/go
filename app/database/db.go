@@ -24,6 +24,10 @@ type DB struct {
 }
 
 func (d *DB) Open() error {
+	dbDriver := "mysql"
+	dbUser := "root"
+	dbPass := ""
+	dbName := "monitoring"
 	db, err := sql.Open(dbDriver, dbUser+":"+dbPass+"@/"+dbName+"?parseTime=true")
 	if err != nil {
 		return err
