@@ -2,7 +2,9 @@ package database
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"siteapi/app/models"
 	"time"
 )
@@ -103,8 +105,23 @@ func Ping(sites <-chan models.Site, readSites chan<- models.Site, db *DB) {
 		sucess := (errRequest == nil && resp.StatusCode == 200)
 
 		updDB.Exec(lastExecutionDate, sucess, time.Since(time_start), site.ID)
+
+		if !sucess {
+			go SaveLogErrorInFile(site.URL)
+		}
 		go AddSiteMonitoring(site, readSites)
 	}
+}
+
+func SaveLogErrorInFile(url string) {
+	f, err := os.OpenFile("errorRequest", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer f.Close()
+
+	logger := log.New(f, "Error - ", log.LstdFlags)
+	logger.Println("- URL:", url)
 }
 
 func AddSiteMonitoring(site models.Site, readSites chan<- models.Site) {
