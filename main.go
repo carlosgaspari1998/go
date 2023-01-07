@@ -3,25 +3,18 @@ package main
 import (
 	"log"
 	"net/http"
-	"siteapi/app"
-	"siteapi/app/database"
+	"siteapi/app/routes"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	app := app.New()
-	app.DB = &database.DB{}
-	err := app.DB.Open()
-
-	if err != nil {
-		panic(err)
-	}
-
-	defer app.DB.Close()
-
-	http.HandleFunc("/", app.Router.ServeHTTP)
-
+	r := mux.NewRouter()
+	routes.RegisterSiteRoutes(r)
+	http.Handle("/", r)
 	log.Println("App running..")
-	err = http.ListenAndServe(":8080", nil)
+
+	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		panic(err)
 	}

@@ -1,4 +1,4 @@
-package app
+package utils
 
 import (
 	"encoding/json"
@@ -6,11 +6,11 @@ import (
 	"net/http"
 )
 
-func parse(w http.ResponseWriter, r *http.Request, data interface{}) error {
+func Parse(w http.ResponseWriter, r *http.Request, data interface{}) error {
 	return json.NewDecoder(r.Body).Decode(data)
 }
 
-func sendResponse(w http.ResponseWriter, _ *http.Request, data interface{}, status int) {
+func SendResponse(w http.ResponseWriter, _ *http.Request, data interface{}, status int) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(status)
 
